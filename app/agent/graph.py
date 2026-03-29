@@ -210,6 +210,52 @@ def execute_tools(state: AgentState) -> AgentState:
             if not tool_fn:
                 raise ValueError(f"Unknown tool: {tool_name}")
 
+            # Try Google ADK first for extract_jd_requirements (stretch integration)
+            if tool_name == "extract_jd_requirements":
+                try:
+                    import asyncio
+                    from app.tools.adk_extract_jd import run_adk_extraction
+                    jd_input = tool_args.get("job_url_or_text", "")
+                    loop = asyncio.new_event_loop()
+                    try:
+                        raw_result = loop.run_until_complete(run_adk_extraction(jd_input))
+                        logger.info("adk_extract_used", tool=tool_name)
+                    finally:
+                        loop.close()
+                except Exception as adk_err:
+                    logger.info("adk_fallback_to_langgraph", tool=tool_name, error=str(adk_err))
+                    raw_result = None  # fall through to LangGraph tool below
+
+                if raw_result is not None:
+                    result = raw_result
+                    # Skip the normal tool execution below
+                    validated = validate_or_retry_extraction(result)
+                    result = validated if validated else result
+                    state["requirements"] = result
+                    state["current_step"] = "extracted"
+
+                    latency = int((time.time() - start) * 1000)
+                    tool_calls_trace.append(
+                        ToolCallTrace(tool=tool_name, status="success", latency_ms=latency).model_dump()
+                    )
+                    messages.append(ToolMessage(
+                        content=json.dumps(result) if isinstance(result, dict) else str(result),
+                        tool_call_id=tool_id,
+                    ))
+                    state["agent_trace"] = {
+                        "tool_calls": tool_calls_trace,
+                        "total_llm_calls": state.get("total_llm_calls", 0),
+                        "fallbacks_triggered": fallbacks,
+                        "total_tokens_used": trace.get("total_tokens_used", 0),
+                    }
+                    progress_cb = state.get("progress_callback")
+                    if progress_cb:
+                        try:
+                            progress_cb({"current_step": "extracted", "agent_trace": state["agent_trace"]})
+                        except Exception:
+                            pass
+                    continue  # skip normal tool execution for this tool call
+
             # Mode 1: Execute with timeout protection
             try:
                 raw_result = with_timeout(tool_fn.invoke, tool_args)

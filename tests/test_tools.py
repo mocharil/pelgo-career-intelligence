@@ -261,3 +261,70 @@ class TestAgentState:
         }
         assert state["job_id"] == "test-123"
         assert state["should_gather_more_signal"] is False
+
+
+# --- Individual Tool Tests (mocked LLM) ---
+
+class TestExtractJdTool:
+    def test_extract_from_text(self):
+        from app.tools.extract_jd import extract_jd_requirements
+        mock_response = '{"required_skills": ["Python", "SQL"], "nice_to_have_skills": ["Docker"], "seniority_level": "senior", "domain": "fintech", "responsibilities": ["Build APIs"], "company_name": "Acme", "job_title": "Senior Engineer"}'
+        with patch('app.llm.call_gemini', return_value=mock_response):
+            result = extract_jd_requirements.invoke({"job_url_or_text": "Senior Engineer at Acme. Python, SQL required."})
+            assert "Python" in result["required_skills"]
+            assert result["seniority_level"] == "senior"
+            assert result["domain"] == "fintech"
+
+    def test_extract_schema_validated(self):
+        from app.tools.extract_jd import extract_jd_requirements
+        # LLM returns markdown-wrapped JSON
+        mock_response = '```json\n{"required_skills": ["Go"], "nice_to_have_skills": [], "seniority_level": "mid", "domain": "infra", "responsibilities": ["Deploy"], "company_name": "Unknown", "job_title": "Unknown"}\n```'
+        with patch('app.llm.call_gemini', return_value=mock_response):
+            result = extract_jd_requirements.invoke({"job_url_or_text": "Go developer needed"})
+            assert result["required_skills"] == ["Go"]
+
+
+class TestScoreCandidateTool:
+    def test_scoring_with_mocked_llm(self):
+        from app.tools.score_candidate import score_candidate_against_requirements
+        mock_response = '{"overall_score": 78, "dimension_scores": {"skills": 80, "experience": 75, "seniority_fit": 70}, "matched_skills": ["Python"], "gap_skills": ["K8s"], "confidence": "medium"}'
+        with patch('app.llm.call_gemini', return_value=mock_response):
+            result = score_candidate_against_requirements.invoke({
+                "candidate_profile": {"name": "Test", "skills": ["Python"]},
+                "requirements": {"required_skills": ["Python", "K8s"]},
+            })
+            assert result["overall_score"] == 78
+            assert "Python" in result["matched_skills"]
+            assert result["confidence"] == "medium"
+
+
+class TestPrioritiseGapsTool:
+    def test_prioritise_with_mocked_llm(self):
+        from app.tools.prioritise_gaps import prioritise_skill_gaps
+        mock_response = '[{"skill": "K8s", "priority_rank": 1, "estimated_match_gain_pct": 15, "rationale": "High demand"}, {"skill": "GraphQL", "priority_rank": 2, "estimated_match_gain_pct": 8, "rationale": "Nice to have"}]'
+        with patch('app.llm.call_gemini', return_value=mock_response):
+            result = prioritise_skill_gaps.invoke({
+                "gap_skills": ["K8s", "GraphQL"],
+                "job_market_context": "cloud engineering",
+            })
+            assert len(result) == 2
+            assert result[0]["priority_rank"] == 1
+            assert result[0]["skill"] == "K8s"
+
+    def test_empty_gaps(self):
+        from app.tools.prioritise_gaps import prioritise_skill_gaps
+        result = prioritise_skill_gaps.invoke({"gap_skills": [], "job_market_context": "any"})
+        assert result == []
+
+
+class TestResearchSkillsTool:
+    def test_research_with_mocked_llm_and_search(self):
+        from app.tools.research_skills import research_skill_resources
+        mock_llm = '{"resources": [{"title": "K8s Course", "url": "https://example.com", "estimated_hours": 20, "type": "course"}], "relevance_score": 0.9}'
+        with patch('app.llm.call_gemini', return_value=mock_llm), \
+             patch('app.tools.research_skills._search_duckduckgo', return_value=[{"title": "test", "link": "https://test.com", "snippet": "test"}]), \
+             patch('app.tools.research_skills._search_github_topics', return_value=[]):
+            result = research_skill_resources.invoke({"skill_name": "Kubernetes", "seniority_context": "senior"})
+            assert len(result["resources"]) == 1
+            assert result["resources"][0]["type"] == "course"
+            assert result["relevance_score"] == 0.9

@@ -10,7 +10,7 @@ These handlers are called by the agent's execute_tools node and routing logic.
 from __future__ import annotations
 
 import json
-import threading
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeout
 from typing import Any, Callable
 
 import structlog
@@ -26,32 +26,21 @@ TOOL_TIMEOUT_MS = settings.tool_timeout_seconds * 1000
 # --- Mode 1: Tool Timeout ---
 
 def with_timeout(func: Callable, args: dict, timeout_ms: int = TOOL_TIMEOUT_MS) -> Any:
-    """Execute a tool call with timeout protection.
+    """Execute a tool call with timeout protection using concurrent.futures.
 
-    Strategy: Run in a thread with a deadline. If the tool exceeds
-    the timeout, raise TimeoutError so the caller can retry or skip.
+    Strategy: Submit to a thread pool with a deadline. If the tool exceeds
+    the timeout, cancel and raise TimeoutError so the caller can retry or skip.
+    Uses concurrent.futures for clean resource management (no orphan threads).
     """
-    result: list[Any] = [None]
-    error: list[Exception | None] = [None]
-
-    def target():
+    timeout_s = timeout_ms / 1000
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        future = executor.submit(func, args)
         try:
-            result[0] = func(args)
-        except Exception as e:
-            error[0] = e
-
-    thread = threading.Thread(target=target)
-    thread.start()
-    thread.join(timeout=timeout_ms / 1000)
-
-    if thread.is_alive():
-        logger.warning("tool_timeout", timeout_ms=timeout_ms)
-        raise TimeoutError(f"Tool timed out after {timeout_ms}ms")
-
-    if error[0]:
-        raise error[0]
-
-    return result[0]
+            return future.result(timeout=timeout_s)
+        except FuturesTimeout:
+            future.cancel()
+            logger.warning("tool_timeout", timeout_ms=timeout_ms)
+            raise TimeoutError(f"Tool timed out after {timeout_ms}ms")
 
 
 # --- Mode 2: Invalid Tool Output ---
