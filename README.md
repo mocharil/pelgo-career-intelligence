@@ -27,15 +27,26 @@ An agentic career-matching system that autonomously analyzes candidate profiles 
 
 ## Quick Start
 
-### Option A: Docker Compose (recommended)
+### Prerequisites
+
+1. **Docker + Docker Compose** installed
+2. **Google Cloud service account** with Vertex AI API enabled:
+   - Create a service account in GCP Console
+   - Grant it the "Vertex AI User" role
+   - Download the JSON key file
+   - Save it as `gemini_creds.json` in the project root
+
+### Option A: Docker Compose (recommended — runs in under 5 minutes)
 
 ```bash
 # 1. Clone and configure
+git clone https://github.com/mocharil/pelgo-career-intelligence.git
+cd pelgo-career-intelligence
 cp .env.example .env
-# Place your Google Cloud service account key as gemini_creds.json in project root
-# Edit .env if needed (defaults point to the service account file)
+# Edit .env with your GCP project ID
+# Place gemini_creds.json in project root
 
-# 2. Start everything
+# 2. Start everything (one command)
 docker-compose up --build
 
 # 3. Open the UI
@@ -45,18 +56,17 @@ docker-compose up --build
 
 `docker-compose up --build` starts the full stack: PostgreSQL, Redis, FastAPI (port 8001), 2 background workers, and the Nginx-served React frontend (port 3000). Migrations and seed data run automatically on first boot.
 
-### Option B: Manual Setup (backend via Docker, frontend via npm)
+### Option B: Backend via Docker, Frontend via npm (for development)
 
 ```bash
-# 1. Start backend services
+# 1. Start backend services only
 docker-compose up --build postgres redis api worker-1 worker-2
 
 # 2. In a separate terminal, start the frontend dev server
 cd frontend
 npm install
 npm run dev
-# Frontend dev server: http://localhost:5173 (Vite default)
-# API available at:    http://localhost:8001
+# Frontend: http://localhost:3000 (proxies API to localhost:8001)
 ```
 
 ---
@@ -468,5 +478,12 @@ pelgo/
 
 ## AI Tools Used
 
-- **Claude Code (Anthropic):** Used to scaffold project structure, implement tools, build the frontend, and write tests. All architectural decisions are my own.
-- **Google Gemini 2.0 Flash (via Vertex AI):** Powers the agent's tool calls at runtime (JD extraction, scoring, prioritisation, resource structuring, CV improvement, cover letter generation, company analysis, quiz generation, quiz grading). Chosen for speed, cost-effectiveness, and good structured JSON output.
+Full transparency on AI tool usage, as encouraged by the assignment:
+
+- **Claude Code (Anthropic Opus 4.6):** Used extensively as a coding partner for implementation, debugging, code review, and test writing. Architectural decisions (LangGraph over CrewAI, typed state design, failure handler strategies, polling vs WebSocket) are my own — Claude helped execute them faster. Prompts were iterative; I directed the approach, Claude wrote the code, I reviewed and corrected.
+- **Google Gemini 2.0 Flash (via Vertex AI):** Powers ALL AI features at runtime:
+  - Agent tools: JD extraction, candidate scoring, gap prioritisation, resource research
+  - CV features: resume parsing, markdown CV generation, text improvement (improve/shorten/expand/quantify)
+  - Application features: cover letter generation, company profile analysis
+  - Assessment: quiz generation and grading
+  - Chosen for speed (~1-3s per call), cost-effectiveness, and reliable structured JSON output.
