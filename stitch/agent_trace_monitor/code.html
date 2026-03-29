@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Pelgo Agent Trace Monitor</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "tertiary-fixed": "#6ffbbe",
+              "error-container": "#ffdad6",
+              "tertiary-fixed-dim": "#4edea3",
+              "on-error-container": "#93000a",
+              "primary": "#050728",
+              "on-tertiary": "#ffffff",
+              "surface": "#fbf8ff",
+              "on-secondary": "#ffffff",
+              "surface-container-high": "#e7e6ff",
+              "background": "#fbf8ff",
+              "on-primary-container": "#8486ac",
+              "secondary-fixed": "#dce1ff",
+              "on-surface": "#161838",
+              "on-secondary-fixed": "#00164e",
+              "error": "#ba1a1a",
+              "surface-tint": "#595c7f",
+              "surface-bright": "#fbf8ff",
+              "outline-variant": "#c7c5cf",
+              "on-primary-fixed-variant": "#414466",
+              "on-tertiary-container": "#009d6c",
+              "surface-container-highest": "#e0e0ff",
+              "inverse-surface": "#2b2e4e",
+              "secondary-fixed-dim": "#b6c4ff",
+              "on-error": "#ffffff",
+              "on-secondary-container": "#f4f3ff",
+              "secondary-container": "#1e61ff",
+              "primary-container": "#1c1f3f",
+              "primary-fixed-dim": "#c1c3ed",
+              "surface-container-low": "#f4f2ff",
+              "inverse-on-surface": "#f1efff",
+              "on-secondary-fixed-variant": "#003baf",
+              "surface-container": "#edecff",
+              "inverse-primary": "#c1c3ed",
+              "surface-variant": "#e0e0ff",
+              "secondary": "#0049d4",
+              "on-surface-variant": "#46464e",
+              "on-background": "#161838",
+              "on-primary": "#ffffff",
+              "surface-dim": "#d5d7ff",
+              "primary-fixed": "#e0e0ff",
+              "outline": "#77767e",
+              "on-tertiary-fixed-variant": "#005236",
+              "on-primary-fixed": "#161838",
+              "tertiary": "#000f07",
+              "tertiary-container": "#002819",
+              "surface-container-lowest": "#ffffff",
+              "on-tertiary-fixed": "#002113"
+            },
+            fontFamily: {
+              "headline": ["Inter", "sans-serif"],
+              "body": ["Inter", "sans-serif"],
+              "label": ["Inter", "sans-serif"]
+            },
+            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface selection:bg-tertiary-fixed selection:text-on-tertiary-fixed">
+<!-- TopNavBar -->
+<nav class="fixed top-0 w-full z-50 bg-white/60 dark:bg-slate-950/60 backdrop-blur-xl tonal-shift bg-slate-50/50 dark:bg-slate-900/50 font-sans antialiased tracking-tight h-16">
+<div class="flex justify-between items-center px-8 h-16 w-full max-w-screen-2xl mx-auto">
+<div class="flex items-center gap-8">
+<span class="text-2xl font-black tracking-tighter text-indigo-950 dark:text-white">Pelgo</span>
+<div class="hidden md:flex gap-6 items-center">
+<a class="text-indigo-950 dark:text-white font-bold border-b-2 border-indigo-600 transition-colors py-1" href="#">Monitoring</a>
+<a class="text-slate-500 dark:text-slate-400 font-medium hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors" href="#">Infrastructure</a>
+<a class="text-slate-500 dark:text-slate-400 font-medium hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors" href="#">Logs</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative hidden lg:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">search</span>
+<input class="bg-surface-container-high border-none rounded-xl pl-10 pr-4 py-1.5 text-sm focus:ring-2 focus:ring-primary w-64" placeholder="Search traces..." type="text"/>
+</div>
+<button class="text-indigo-950 dark:text-indigo-50 hover:scale-95 duration-150 ease-in-out">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-primary-container overflow-hidden">
+<img alt="User Profile Avatar" class="w-full h-full object-cover" data-alt="Professional male architect portrait in a modern studio setting with warm directional lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDP52FgH15G18H38ruDVFgSg5pK6YW7ekNOiYPLLfgdhAnUDidkblXUQN0uEpzd2k87OiXOTQTpoIxsduYFzpF8q5kZu4ND0Il-KambS-sqJHKuZoxG1ARfuJeFdP-QLlVaWS0EGfCyIzMc_acrKcxbu-v7QQeT8gKHwjzB2Xd1RNMfdZPRtyPHzPYhxkH94dfbuwmLMDKN7FrYzpa9zZRvNvhL9wrubZFYRms0aYjW4WOfLZfk02ucZFi5FuHXhV9o85JzKDdy_eVF"/>
+</div>
+</div>
+</div>
+</nav>
+<!-- SideNavBar -->
+<aside class="h-screen w-64 fixed left-0 top-0 z-40 bg-slate-50 dark:bg-slate-900 tonal-layering no-border flex flex-col pt-20 pb-8 gap-y-2 font-sans text-sm font-semibold tracking-tight">
+<div class="px-6 mb-8">
+<h2 class="text-lg font-bold text-indigo-950 dark:text-white">The Architect</h2>
+<p class="text-xs text-on-surface-variant font-medium opacity-70">Career Intelligence</p>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center px-4 py-2.5 mx-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:translate-x-1 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="dashboard">dashboard</span>
+                Dashboard
+            </a>
+<a class="flex items-center px-4 py-2.5 bg-white dark:bg-slate-800 text-indigo-900 dark:text-indigo-100 shadow-sm rounded-lg mx-2 active:scale-98" href="#">
+<span class="material-symbols-outlined mr-3 text-secondary" data-icon="work">work</span>
+                Job Matches
+            </a>
+<a class="flex items-center px-4 py-2.5 mx-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:translate-x-1 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="school">school</span>
+                Learning Paths
+            </a>
+<a class="flex items-center px-4 py-2.5 mx-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:translate-x-1 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="settings">settings</span>
+                Settings
+            </a>
+</nav>
+<div class="mt-auto px-6">
+<div class="p-4 rounded-xl bg-surface-container-high/50">
+<p class="text-[10px] uppercase tracking-widest text-on-surface-variant mb-2">System Status</p>
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-tertiary-fixed shadow-[0_0_8px_#6ffbbe]"></div>
+<span class="text-xs">Agents Active</span>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="ml-64 pt-24 px-8 pb-12 min-h-screen">
+<!-- Header & Breadcrumbs -->
+<div class="mb-10">
+<div class="flex items-center gap-2 text-xs font-mono text-on-surface-variant mb-3">
+<span>PROJECTS</span>
+<span class="material-symbols-outlined text-[10px]">chevron_right</span>
+<span>AGENT_PELGO_V2</span>
+<span class="material-symbols-outlined text-[10px]">chevron_right</span>
+<span class="text-primary font-bold">TRACES</span>
+</div>
+<div class="flex justify-between items-end">
+<div>
+<h1 class="text-4xl font-black tracking-tight text-primary mb-2">Agent Trace: Job Run #uuid-12345</h1>
+<p class="text-on-surface-variant max-w-2xl">Visualizing the execution flow of the Career Intelligence agent as it processes high-priority job match signals.</p>
+</div>
+<div class="flex gap-3">
+<button class="px-6 py-2.5 rounded-full bg-surface-container-highest text-primary font-bold text-sm hover:translate-y-[-1px] transition-all">Re-run Trace</button>
+<button class="px-6 py-2.5 rounded-full bg-gradient-to-br from-primary to-primary-container text-on-primary font-bold text-sm shadow-xl shadow-primary/10 hover:opacity-90 transition-all">Export Analysis</button>
+</div>
+</div>
+</div>
+<!-- Bento Stats Grid -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+<div class="col-span-1 p-6 bg-surface-container-low rounded-xl">
+<p class="text-xs font-mono uppercase tracking-widest text-on-surface-variant mb-4">Total LLM Calls</p>
+<div class="flex items-baseline gap-2">
+<span class="text-5xl font-black text-primary">4</span>
+<span class="text-xs text-on-tertiary-container bg-tertiary-fixed-dim/20 px-2 py-0.5 rounded-full">Optimal</span>
+</div>
+</div>
+<div class="col-span-1 p-6 bg-surface-container-low rounded-xl">
+<p class="text-xs font-mono uppercase tracking-widest text-on-surface-variant mb-4">Latency</p>
+<div class="flex items-baseline gap-2">
+<span class="text-5xl font-black text-primary">2.1s</span>
+<span class="text-xs text-on-surface-variant">Avg: 1.8s</span>
+</div>
+</div>
+<div class="col-span-2 p-6 bg-primary-container rounded-xl flex items-center justify-between relative overflow-hidden group">
+<div class="relative z-10">
+<p class="text-xs font-mono uppercase tracking-widest text-on-primary-container mb-4">Trace Status</p>
+<div class="flex items-center gap-3">
+<span class="text-4xl font-bold text-white tracking-tight">Completed</span>
+<span class="material-symbols-outlined text-tertiary-fixed text-3xl" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+</div>
+<div class="absolute -right-10 -bottom-10 w-48 h-48 bg-tertiary-fixed/5 rounded-full blur-3xl group-hover:scale-110 transition-transform"></div>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
+<!-- Timeline Section -->
+<div class="lg:col-span-2 space-y-6">
+<div class="flex items-center justify-between mb-2">
+<h3 class="text-xl font-bold tracking-tight">Tool Call Sequence</h3>
+<div class="flex gap-2">
+<span class="w-3 h-3 rounded-full bg-tertiary-fixed"></span>
+<span class="text-[10px] uppercase font-bold text-on-surface-variant">Live Execution</span>
+</div>
+</div>
+<!-- Timeline Items -->
+<div class="relative space-y-12 pl-8 border-l border-surface-container-high ml-4 py-4">
+<!-- Step 1 -->
+<div class="relative group">
+<div class="absolute -left-[45px] top-0 w-8 h-8 rounded-full bg-surface-container-lowest flex items-center justify-center border-4 border-surface ring-2 ring-primary">
+<span class="text-[10px] font-bold">01</span>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-xl hover:translate-x-1 transition-transform">
+<div class="flex justify-between items-start mb-4">
+<div>
+<h4 class="font-bold text-lg text-primary">extract_jd_requirements</h4>
+<p class="text-sm text-on-surface-variant">Context extraction from raw job description markdown.</p>
+</div>
+<div class="text-right">
+<span class="text-xs font-mono bg-tertiary-fixed-dim/20 text-on-tertiary-container px-2 py-1 rounded">SUCCESS</span>
+<p class="text-[10px] text-on-surface-variant mt-1 font-mono">340ms</p>
+</div>
+</div>
+<button class="text-xs font-bold text-secondary flex items-center gap-1 hover:underline">
+                                [View Payload] <span class="material-symbols-outlined text-sm">open_in_new</span>
+</button>
+</div>
+</div>
+<!-- Step 2 -->
+<div class="relative group">
+<div class="absolute -left-[45px] top-0 w-8 h-8 rounded-full bg-surface-container-lowest flex items-center justify-center border-4 border-surface ring-2 ring-primary">
+<span class="text-[10px] font-bold">02</span>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-xl hover:translate-x-1 transition-transform">
+<div class="flex justify-between items-start mb-4">
+<div>
+<h4 class="font-bold text-lg text-primary">score_candidate_against_requirements</h4>
+<p class="text-sm text-on-surface-variant">Vector embedding comparison and gap analysis.</p>
+</div>
+<div class="text-right">
+<span class="text-xs font-mono bg-tertiary-fixed-dim/20 text-on-tertiary-container px-2 py-1 rounded">SUCCESS</span>
+<p class="text-[10px] text-on-surface-variant mt-1 font-mono">850ms</p>
+</div>
+</div>
+<button class="text-xs font-bold text-secondary flex items-center gap-1 hover:underline">
+                                [View Payload] <span class="material-symbols-outlined text-sm">open_in_new</span>
+</button>
+</div>
+</div>
+<!-- Step 3 -->
+<div class="relative group">
+<div class="absolute -left-[45px] top-0 w-8 h-8 rounded-full bg-surface-container-lowest flex items-center justify-center border-4 border-surface ring-2 ring-primary">
+<span class="text-[10px] font-bold">03</span>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-xl hover:translate-x-1 transition-transform">
+<div class="flex justify-between items-start mb-4">
+<div>
+<h4 class="font-bold text-lg text-primary">research_skill_resources</h4>
+<p class="text-sm text-on-surface-variant">Browsing course providers for identified skill gaps.</p>
+</div>
+<div class="text-right">
+<span class="text-xs font-mono bg-tertiary-fixed-dim/20 text-on-tertiary-container px-2 py-1 rounded">SUCCESS</span>
+<p class="text-[10px] text-on-surface-variant mt-1 font-mono">1200ms</p>
+</div>
+</div>
+<div class="flex gap-4">
+<button class="text-xs font-bold text-secondary flex items-center gap-1 hover:underline">
+                                    [View Payload] <span class="material-symbols-outlined text-sm">open_in_new</span>
+</button>
+<div class="h-4 w-px bg-outline-variant/30"></div>
+<span class="text-[10px] text-on-surface-variant italic">High network latency detected</span>
+</div>
+</div>
+</div>
+<!-- Step 4 -->
+<div class="relative group">
+<div class="absolute -left-[45px] top-0 w-8 h-8 rounded-full bg-surface-container-lowest flex items-center justify-center border-4 border-surface ring-2 ring-primary">
+<span class="text-[10px] font-bold">04</span>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-xl hover:translate-x-1 transition-transform">
+<div class="flex justify-between items-start mb-4">
+<div>
+<h4 class="font-bold text-lg text-primary">prioritise_skill_gaps</h4>
+<p class="text-sm text-on-surface-variant">Sorting learning paths by match impact score.</p>
+</div>
+<div class="text-right">
+<span class="text-xs font-mono bg-tertiary-fixed-dim/20 text-on-tertiary-container px-2 py-1 rounded">SUCCESS</span>
+<p class="text-[10px] text-on-surface-variant mt-1 font-mono">210ms</p>
+</div>
+</div>
+<button class="text-xs font-bold text-secondary flex items-center gap-1 hover:underline">
+                                [View Payload] <span class="material-symbols-outlined text-sm">open_in_new</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Inspect Sidebar -->
+<div class="lg:col-span-1">
+<div class="sticky top-24 space-y-6">
+<div class="p-6 bg-surface-container-high rounded-xl">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-bold tracking-tight">Raw JSON Output</h3>
+<button class="w-8 h-5 bg-primary rounded-full relative transition-colors duration-200">
+<div class="absolute right-1 top-1 w-3 h-3 bg-white rounded-full"></div>
+</button>
+</div>
+<div class="bg-primary-container p-4 rounded-lg font-mono text-[11px] leading-relaxed text-blue-200 overflow-x-auto">
+<pre><code>{
+  "trace_id": "uuid-12345",
+  "agent_version": "2.4.1",
+  "status": "COMPLETED",
+  "output_schema": {
+    "match_score": 0.94,
+    "confidence": 0.88,
+    "recommended_actions": [
+      {
+        "type": "skill_acquisition",
+        "target": "Rust"
+      }
+    ]
+  },
+  "metadata": {
+    "model": "pelgo-architect-v1",
+    "region": "us-east-1"
+  }
+}</code></pre>
+</div>
+<p class="mt-4 text-[11px] text-on-surface-variant leading-normal">
+                            This output was validated against the A3 schema requirements. 
+                            <a class="text-secondary font-bold underline" href="#">View Validation Logs</a>
+</p>
+</div>
+<div class="p-6 bg-tertiary-container rounded-xl text-tertiary-fixed">
+<div class="flex items-center gap-3 mb-4">
+<span class="material-symbols-outlined">auto_awesome</span>
+<h4 class="font-bold tracking-tight">Architect Insight</h4>
+</div>
+<p class="text-sm leading-relaxed mb-4 opacity-80">
+                            The tool <span class="font-mono text-white">research_skill_resources</span> took 3x longer than historical averages. System recommends upgrading the web-search crawler worker node.
+                        </p>
+<div class="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
+<div class="bg-tertiary-fixed w-3/4 h-full shadow-[0_0_8px_#6ffbbe]"></div>
+</div>
+<div class="flex justify-between mt-2">
+<span class="text-[10px] font-bold uppercase">Efficiency Score</span>
+<span class="text-[10px] font-bold">75%</span>
+</div>
+</div>
+<!-- Decorative Graphic -->
+<div class="rounded-xl overflow-hidden aspect-video relative group">
+<img alt="Data Network Visualization" class="w-full h-full object-cover grayscale opacity-40 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700" data-alt="Abstract visualization of complex data networks and neural pathways with glowing blue and indigo light trails on a dark background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAdmLZt5eotVv6aZD6UbSN0Qma58wQLpF4Bk6ImqKEFoP04p4p8-99GQ5Y6yCi0QwfjagESytwEF3tljQDPKUYb1UH_c21a2xGcz4JYWB0792rvhUARAh1VfNIMlYAFMS6di_72_sKHqZMDZpbvNDu8YG-y-03aR0fqf-STczzgm7KZ-0q2utPqKHgV7Fgpco3XEzi6W6s70yV_y55k6RQK-vAe_2qVpvEUs5slU8p5Fm0J8q5WbiQeqKQaeR5tAf_8e6tEjIfJPOv8"/>
+<div class="absolute inset-0 bg-gradient-to-t from-primary/80 to-transparent flex items-end p-4">
+<p class="text-white text-xs font-medium">Neural Execution Context Mapping</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- FAB Suppression: On an Admin Trace Monitor, a global FAB for "Book a Walk" or similar is logically irrelevant, prioritizing the trace data. -->
+</body></html>
