@@ -29,30 +29,42 @@ An agentic career-matching system that autonomously analyzes candidate profiles 
 
 ### Prerequisites
 
-1. **Docker + Docker Compose** installed
+1. **Docker + Docker Compose** installed ([Install Docker](https://docs.docker.com/get-docker/))
 2. **Google Cloud service account** with Vertex AI API enabled:
-   - Create a service account in GCP Console
-   - Grant it the "Vertex AI User" role
-   - Download the JSON key file
-   - Save it as `gemini_creds.json` in the project root
+   - Go to [GCP Console](https://console.cloud.google.com/) → create or select a project
+   - Enable the **Vertex AI API** (`APIs & Services → Enable APIs → search "Vertex AI"`)
+   - Go to `IAM & Admin → Service Accounts` → create a service account
+   - Grant it the **"Vertex AI User"** role
+   - Click the service account → `Keys → Add Key → Create new key → JSON`
+   - Save the downloaded file as **`gemini_creds.json`** in the project root
 
 ### Option A: Docker Compose (recommended — runs in under 5 minutes)
 
 ```bash
-# 1. Clone and configure
+# 1. Clone
 git clone https://github.com/mocharil/pelgo-career-intelligence.git
 cd pelgo-career-intelligence
-cp .env.example .env
-# Edit .env with your GCP project ID
-# Place gemini_creds.json in project root
 
-# 2. Start everything (one command)
+# 2. Configure
+cp .env.example .env
+# Edit .env → replace "your-gcp-project-id" with your actual GCP project ID
+# Example: GOOGLE_CLOUD_PROJECT=my-project-123456
+
+# 3. Place credentials (REQUIRED)
+# Copy your service account JSON key file to the project root:
+cp /path/to/your-key.json ./gemini_creds.json
+
+# 4. Start everything (one command)
 docker-compose up --build
 
-# 3. Open the UI
+# 5. Open the UI
 # Frontend:  http://localhost:3000
 # API:       http://localhost:8001
+# Health:    http://localhost:8001/health
 ```
+
+> **Note:** First build takes 3-5 minutes (downloading dependencies). Subsequent starts are fast.
+> Migrations and seed data run automatically on first boot.
 
 `docker-compose up --build` starts the full stack: PostgreSQL, Redis, FastAPI (port 8001), 2 background workers, and the Nginx-served React frontend (port 3000). Migrations and seed data run automatically on first boot.
 
@@ -390,22 +402,29 @@ Shared component library in `frontend/src/components/shared/`:
 
 ## Testing
 
+### Unit Tests (no external dependencies — runs instantly)
+
 ```bash
-# Start the full stack first
+# 31 tests: schema validation, failure handlers, SSRF protection, tool-level tests
+pytest tests/test_tools.py -v
+```
+
+### Integration Tests (requires running Docker stack)
+
+```bash
+# Start the stack first
 docker-compose up --build -d
 
-# Run integration tests (full lifecycle: ingest candidate → submit JD → agent runs → validate)
-docker-compose exec api pytest tests/test_integration.py -v
-
-# Run from host (if API is exposed on port 8001)
+# Wait for healthy, then run (from host — API on port 8001)
 pytest tests/test_integration.py -v
 ```
 
-The integration test covers the complete lifecycle:
-1. Create a candidate via resume upload
-2. Submit job descriptions for matching
-3. Poll until agent completes
-4. Validate the result schema (scores, gaps, learning plan, trace)
+### What the tests cover
+
+| Test Suite | Tests | Coverage |
+|------------|-------|----------|
+| `test_tools.py` | 31 | Schema validation (A3 output, dimension clamping, float coercion), failure handlers (timeout, partial recovery, low confidence), SSRF URL validation, LLM response parsing, all 4 tools with mocked LLM |
+| `test_integration.py` | 5 | Full lifecycle (candidate → JD → agent → result with agent_trace), pagination, 404 handling |
 
 ---
 
