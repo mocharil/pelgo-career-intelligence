@@ -313,7 +313,6 @@ export default function ComparePage() {
               <span className="text-sm font-bold text-on-surface">Matched Skills</span>
             </div>
             {selected.map((m, i) => {
-              const thisSkills = new Set(m.result.matched_skills);
               return (
                 <div key={m.job_id} className={`px-6 py-4 border-l border-surface-container-high ${COLUMN_COLORS[i]}`}>
                   <div className="flex flex-wrap gap-1.5">

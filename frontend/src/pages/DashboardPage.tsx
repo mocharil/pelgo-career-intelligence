@@ -519,13 +519,13 @@ export default function DashboardPage() {
               <div className="space-y-6">
                 {[...matches]
                   .sort((a, b) => {
-                    const dateA = (a as Record<string, unknown>).updated_at ?? (a as Record<string, unknown>).created_at ?? '';
-                    const dateB = (b as Record<string, unknown>).updated_at ?? (b as Record<string, unknown>).created_at ?? '';
-                    return new Date(dateB as string).getTime() - new Date(dateA as string).getTime();
+                    const dateA = a.updated_at ?? a.created_at ?? '';
+                    const dateB = b.updated_at ?? b.created_at ?? '';
+                    return new Date(dateB).getTime() - new Date(dateA).getTime();
                   })
                   .slice(0, 5)
                   .map((m) => {
-                    const dateStr = ((m as Record<string, unknown>).updated_at ?? (m as Record<string, unknown>).created_at ?? '') as string;
+                    const dateStr = m.updated_at ?? m.created_at ?? '';
                     const timeAgo = (ds: string): string => {
                       if (!ds) return '';
                       const diff = Date.now() - new Date(ds).getTime();

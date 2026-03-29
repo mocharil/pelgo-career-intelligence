@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { useCandidate } from '../context/CandidateContext';
 import { generateAssessment, gradeAssessment } from '../lib/api';
 import { verifySkill } from '../lib/skills';
 import type { QuizQuestion, QuizResult } from '../lib/api';
@@ -12,7 +11,6 @@ export default function AssessmentPage() {
   const [searchParams] = useSearchParams();
   const skill = searchParams.get('skill') || '';
   const seniority = searchParams.get('seniority') || 'mid';
-  const { candidate } = useCandidate();
 
   const [phase, setPhase] = useState<Phase>('loading');
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
@@ -247,7 +245,7 @@ export default function AssessmentPage() {
 
           {/* Per-question review */}
           <div className="space-y-3">
-            {result.results.map((r, i) => {
+            {result.results.map((r) => {
               const q = questions.find(q => q.id === r.id);
               return (
                 <div key={r.id} className={`rounded-xl p-5 ${r.correct ? 'bg-surface-container-lowest' : 'bg-error-container/10'}`}>

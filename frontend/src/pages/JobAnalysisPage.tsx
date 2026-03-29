@@ -343,11 +343,6 @@ function CompanyProfileSection({ jobDescription, jobUrl }: { jobDescription: str
   // Try to extract domain from job URL for logo
   const urlDomain = jobUrl ? (() => { try { return new URL(jobUrl).hostname.replace('www.', ''); } catch { return null; } })() : null;
 
-  const sizeIcons: Record<string, string> = {
-    startup: 'rocket_launch', small: 'storefront', medium: 'business',
-    large: 'domain', enterprise: 'corporate_fare',
-  };
-
   if (!profile) {
     return (
       <div className="bg-surface-container-lowest rounded-xl p-6 flex items-center justify-between">
