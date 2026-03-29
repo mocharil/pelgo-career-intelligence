@@ -117,6 +117,7 @@ def _init_state(
             "tool_calls": [],
             "total_llm_calls": 0,
             "fallbacks_triggered": 0,
+            "total_tokens_used": 0,
         },
         total_llm_calls=0,
         fallbacks_triggered=0,
@@ -152,16 +153,28 @@ def agent_reason(state: AgentState) -> AgentState:
 
     messages.append(response)
 
+    # Estimate token usage from response metadata
+    token_count = 0
+    try:
+        if hasattr(response, 'usage_metadata') and response.usage_metadata:
+            token_count = getattr(response.usage_metadata, 'total_token_count', 0) or 0
+        elif hasattr(response, 'response_metadata'):
+            token_count = response.response_metadata.get('token_usage', {}).get('total_tokens', 0)
+    except Exception:
+        pass
+
     state = {**state}
     state["messages"] = messages
     state["total_llm_calls"] = state.get("total_llm_calls", 0) + 1
+    prev_trace = state.get("agent_trace", {})
     state["agent_trace"] = {
-        **state.get("agent_trace", {}),
+        **prev_trace,
         "total_llm_calls": state["total_llm_calls"],
+        "total_tokens_used": prev_trace.get("total_tokens_used", 0) + token_count,
     }
 
     logger.info("agent_reason", step=state.get("current_step"), latency_ms=latency,
-                has_tool_calls=bool(response.tool_calls))
+                has_tool_calls=bool(response.tool_calls), tokens=token_count)
 
     return state
 

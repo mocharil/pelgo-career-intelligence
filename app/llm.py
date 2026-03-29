@@ -44,8 +44,19 @@ def get_gemini_model() -> GenerativeModel:
     return GenerativeModel(settings.gemini_model)
 
 
+_last_token_count: int = 0
+
+
+def get_last_token_count() -> int:
+    """Return the token count from the most recent call_gemini invocation."""
+    return _last_token_count
+
+
 def call_gemini(prompt: str, max_tokens: int = 4096) -> str:
     """Call Gemini and return the text response. Logs token usage."""
+    global _last_token_count
+    _last_token_count = 0
+
     model = get_gemini_model()
     response = model.generate_content(
         prompt,
@@ -58,6 +69,7 @@ def call_gemini(prompt: str, max_tokens: int = 4096) -> str:
     # Log token usage
     try:
         usage = response.usage_metadata
+        _last_token_count = usage.total_token_count
         logger.info(
             "llm_token_usage",
             prompt_tokens=usage.prompt_token_count,

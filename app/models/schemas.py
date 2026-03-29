@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 from enum import Enum
-from typing import Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 
@@ -162,6 +162,7 @@ class AgentTrace(BaseModel):
     tool_calls: list[ToolCallTrace] = Field(default_factory=list)
     total_llm_calls: int = 0
     fallbacks_triggered: int = 0
+    total_tokens_used: int = 0
 
 
 # --- Learning Plan Entry ---
