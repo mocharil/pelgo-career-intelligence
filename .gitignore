@@ -1,0 +1,39 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.env
+.env.local
+.env.local.bak
+.venv/
+venv/
+*.egg
+.pytest_cache/
+.mypy_cache/
+*.db
+gemini_creds.json
+*.json.bak
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker volumes
+pgdata/
+
+# Claude
+.claude/
+
+# Images (screenshots)
+image.png
