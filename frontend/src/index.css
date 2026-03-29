@@ -1,0 +1,148 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+
+  /* Primary */
+  --color-primary: #050728;
+  --color-primary-container: #1c1f3f;
+  --color-on-primary: #ffffff;
+  --color-on-primary-container: #8486ac;
+  --color-primary-fixed: #e0e0ff;
+  --color-primary-fixed-dim: #c1c3ed;
+  --color-on-primary-fixed: #161838;
+  --color-on-primary-fixed-variant: #414466;
+  --color-inverse-primary: #c1c3ed;
+
+  /* Surface */
+  --color-surface: #fbf8ff;
+  --color-surface-container: #edecff;
+  --color-surface-container-low: #f4f2ff;
+  --color-surface-container-high: #e7e6ff;
+  --color-surface-container-highest: #e0e0ff;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-dim: #d5d7ff;
+  --color-surface-bright: #fbf8ff;
+  --color-surface-variant: #e0e0ff;
+  --color-surface-tint: #595c7f;
+  --color-on-surface: #161838;
+  --color-on-surface-variant: #46464e;
+  --color-background: #fbf8ff;
+  --color-on-background: #161838;
+  --color-inverse-surface: #2b2e4e;
+  --color-inverse-on-surface: #f1efff;
+
+  /* Secondary */
+  --color-secondary: #0049d4;
+  --color-secondary-fixed: #dce1ff;
+  --color-secondary-fixed-dim: #b6c4ff;
+  --color-secondary-container: #1e61ff;
+  --color-on-secondary: #ffffff;
+  --color-on-secondary-fixed: #00164e;
+  --color-on-secondary-fixed-variant: #003baf;
+  --color-on-secondary-container: #f4f3ff;
+
+  /* Tertiary (Growth) */
+  --color-tertiary: #000f07;
+  --color-tertiary-container: #002819;
+  --color-tertiary-fixed: #6ffbbe;
+  --color-tertiary-fixed-dim: #4edea3;
+  --color-on-tertiary: #ffffff;
+  --color-on-tertiary-container: #009d6c;
+  --color-on-tertiary-fixed: #002113;
+  --color-on-tertiary-fixed-variant: #005236;
+
+  /* Error */
+  --color-error: #ba1a1a;
+  --color-error-container: #ffdad6;
+  --color-on-error: #ffffff;
+  --color-on-error-container: #93000a;
+
+  /* Outline */
+  --color-outline: #77767e;
+  --color-outline-variant: #c7c5cf;
+}
+
+.dark {
+  /* Primary — inverted for dark bg */
+  --color-primary: #c1c3ed;
+  --color-primary-container: #2e3058;
+  --color-on-primary: #1a1c3a;
+  --color-on-primary-container: #e0e0ff;
+  --color-primary-fixed: #3a3c5e;
+  --color-primary-fixed-dim: #8486ac;
+  --color-on-primary-fixed: #e0e0ff;
+  --color-inverse-primary: #050728;
+
+  /* Surface — dark backgrounds */
+  --color-surface: #0e1025;
+  --color-surface-container: #181a32;
+  --color-surface-container-low: #141630;
+  --color-surface-container-high: #20223a;
+  --color-surface-container-highest: #2a2c46;
+  --color-surface-container-lowest: #0a0c1e;
+  --color-surface-dim: #0e1025;
+  --color-surface-variant: #2a2c46;
+  --color-on-surface: #e4e2ee;
+  --color-on-surface-variant: #c0beca;
+  --color-background: #0e1025;
+  --color-on-background: #e4e2ee;
+  --color-inverse-surface: #e4e2ee;
+  --color-inverse-on-surface: #1a1c3a;
+
+  /* Secondary */
+  --color-secondary: #a8b8ff;
+  --color-secondary-fixed: #1e2550;
+  --color-secondary-fixed-dim: #6880cc;
+  --color-secondary-container: #2050cc;
+  --color-on-secondary: #0a1030;
+  --color-on-secondary-fixed: #c8d4ff;
+  --color-on-secondary-container: #d0daff;
+
+  /* Tertiary (Growth) */
+  --color-tertiary-fixed: #4edea3;
+  --color-tertiary-fixed-dim: #3bc28a;
+  --color-tertiary-container: #1a4030;
+  --color-on-tertiary-container: #6ffbbe;
+  --color-on-tertiary-fixed: #002113;
+
+  /* Error */
+  --color-error: #ffb4ab;
+  --color-error-container: #5c1a1a;
+  --color-on-error-container: #ffdad6;
+
+  /* Outline */
+  --color-outline: #8a8894;
+  --color-outline-variant: #3a3a44;
+}
+
+body {
+  margin: 0;
+  background: var(--color-surface, #fbf8ff);
+  color: var(--color-on-surface, #161838);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background: #6ffbbe;
+  color: #002113;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in { animation: fadeIn 0.4s ease-out; }
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.animate-spin { animation: spin 1s linear infinite; }
+
+@keyframes pulse-skeleton {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 0.3; }
+}
+.animate-skeleton { animation: pulse-skeleton 1.5s ease-in-out infinite; }
