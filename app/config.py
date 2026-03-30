@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     google_cloud_project: str = ""
     google_cloud_location: str = "us-central1"
     google_application_credentials: str = "/app/gemini_creds.json"
-    gemini_model: str = "gemini-2.5-flash"
+    gemini_model: str = "gemini-2.5-flash-lite"
 
     # Database (defaults for docker-compose dev environment)
     database_url: str = "postgresql+asyncpg://pelgo:pelgo@postgres:5432/pelgo"
