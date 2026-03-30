@@ -259,7 +259,7 @@ The LangGraph version remains the primary implementation because LangGraph's con
 
 | Decision | Trade-off | Why |
 |---|---|---|
-| Gemini 2.0 Flash via Vertex AI | Fast, cost-effective, good structured output | Pro account gives generous rate limits; Flash model balances speed and quality |
+| Gemini 3 Flash Preview via Vertex AI | Fast, cost-effective, good structured output | Pro account gives generous rate limits; Flash model balances speed and quality |
 | In-memory cache for tools | Lost on restart, not shared between workers | Simplicity. A production system would use Redis cache, but for this scope it's sufficient |
 | DuckDuckGo + GitHub API for search | Less structured results than paid APIs | Zero-cost, no API key needed. DuckDuckGo for course discovery, GitHub API for awesome-lists. Ensures real external calls. |
 | Top 3 gaps only for research | May miss long-tail skills | Prevents unbounded tool calls. Top 3 by impact covers the highest-value learning |
@@ -500,7 +500,7 @@ pelgo/
 Full transparency on AI tool usage, as encouraged by the assignment:
 
 - **Claude Code (Anthropic Opus 4.6):** Used extensively as a coding partner for implementation, debugging, code review, and test writing. Architectural decisions (LangGraph over CrewAI, typed state design, failure handler strategies, polling vs WebSocket) are my own — Claude helped execute them faster. Prompts were iterative; I directed the approach, Claude wrote the code, I reviewed and corrected.
-- **Google Gemini 2.0 Flash (via Vertex AI):** Powers ALL AI features at runtime:
+- **Google Gemini 3 Flash Preview (via Vertex AI):** Powers ALL AI features at runtime:
   - Agent tools: JD extraction, candidate scoring, gap prioritisation, resource research
   - CV features: resume parsing, markdown CV generation, text improvement (improve/shorten/expand/quantify)
   - Application features: cover letter generation, company profile analysis
