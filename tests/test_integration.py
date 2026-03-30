@@ -11,7 +11,7 @@ import httpx
 import pytest
 
 import os
-BASE_URL = os.environ.get("TEST_API_URL", "http://localhost:8001")
+BASE_URL = os.environ.get("TEST_API_URL", "http://localhost:8000")
 POLL_INTERVAL = 3
 MAX_POLL_ATTEMPTS = 40  # 2 minutes max
 

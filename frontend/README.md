@@ -8,7 +8,7 @@ Production dashboard for the Pelgo AI Career Intelligence system. Built with Rea
 # Install dependencies
 npm install
 
-# Development server (proxies /api to backend at localhost:8001)
+# Development server (proxies /api to backend at localhost:8000)
 npm run dev
 # → http://localhost:3000
 
@@ -16,7 +16,7 @@ npm run dev
 npm run build
 ```
 
-**Requirement:** Backend API must be running at `http://localhost:8001` (via `docker-compose up postgres redis api worker-1 worker-2`).
+**Requirement:** Backend API must be running at `http://localhost:8000` (via `docker-compose up postgres redis api worker-1 worker-2`).
 
 ## Pages
 

@@ -59,14 +59,14 @@ docker-compose up --build
 
 # 5. Open the UI
 # Frontend:  http://localhost:3000
-# API:       http://localhost:8001
-# Health:    http://localhost:8001/health
+# API:       http://localhost:8000
+# Health:    http://localhost:8000/health
 ```
 
 > **Note:** First build takes 3-5 minutes (downloading dependencies). Subsequent starts are fast.
 > Migrations and seed data run automatically on first boot.
 
-`docker-compose up --build` starts the full stack: PostgreSQL, Redis, FastAPI (port 8001), 2 background workers, and the Nginx-served React frontend (port 3000). Migrations and seed data run automatically on first boot.
+`docker-compose up --build` starts the full stack: PostgreSQL, Redis, FastAPI (port 8000), 2 background workers, and the Nginx-served React frontend (port 3000). Migrations and seed data run automatically on first boot.
 
 ### Option B: Backend via Docker, Frontend via npm (for development)
 
@@ -78,7 +78,7 @@ docker-compose up --build postgres redis api worker-1 worker-2
 cd frontend
 npm install
 npm run dev
-# Frontend: http://localhost:3000 (proxies API to localhost:8001)
+# Frontend: http://localhost:3000 (proxies API to localhost:8000)
 ```
 
 ---
@@ -98,7 +98,7 @@ npm run dev
                          └────────────┬────────────┘
                                       │ REST
                          ┌────────────▼────────────┐
-                         │   FastAPI API (8001)     │
+                         │   FastAPI API (8000)     │
                          │   15 endpoints           │
                          └───┬──────────────┬──────┘
                              │              │ enqueue
@@ -415,7 +415,7 @@ pytest tests/test_tools.py -v
 # Start the stack first
 docker-compose up --build -d
 
-# Wait for healthy, then run (from host — API on port 8001)
+# Wait for healthy, then run (from host — API on port 8000)
 pytest tests/test_integration.py -v
 ```
 
