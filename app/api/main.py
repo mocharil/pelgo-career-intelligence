@@ -131,12 +131,33 @@ async def create_candidate(
     # Parse resume
     parsed = await _parse_resume(text)
 
-    # Normalize: some models return description as list instead of string
+    # Normalize LLM output variations across different Gemini versions
+    # Skills: some models return dict (grouped by category) instead of flat list
+    skills = parsed.get("skills", [])
+    if isinstance(skills, dict):
+        flat = []
+        for v in skills.values():
+            if isinstance(v, list):
+                flat.extend(v)
+            elif isinstance(v, str):
+                flat.append(v)
+        parsed["skills"] = flat
+
+    # Experiences: description as list, skills_used as string
     for exp in parsed.get("experiences", []):
         if isinstance(exp.get("description"), list):
-            exp["description"] = "\n".join(f"- {item}" if not item.startswith("-") else item for item in exp["description"])
+            exp["description"] = "\n".join(f"- {item}" if not str(item).startswith("-") else str(item) for item in exp["description"])
         if isinstance(exp.get("skills_used"), str):
             exp["skills_used"] = [s.strip() for s in exp["skills_used"].split(",")]
+
+    # Summary: some models return list instead of string
+    if isinstance(parsed.get("summary"), list):
+        parsed["summary"] = " ".join(parsed["summary"])
+
+    # Strengths: some models return dict instead of list
+    strengths = parsed.get("strengths", [])
+    if isinstance(strengths, dict):
+        parsed["strengths"] = list(strengths.values()) if all(isinstance(v, str) for v in strengths.values()) else [str(v) for v in strengths.values()]
 
     candidate_id = uuid.uuid4()
     candidate = CandidateTable(
