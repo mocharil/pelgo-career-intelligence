@@ -187,10 +187,47 @@ def agent_reason(state: AgentState) -> AgentState:
 
             logger.info("agent_direct_extract_success", latency_ms=latency, num_skills=len(extract_result.get("required_skills", [])))
 
-            # Now add context for LLM to continue from step 2
+            # Step 2: directly call score_candidate too (Gemini 2.5 unreliable with bind_tools)
+            from app.tools.score_candidate import score_candidate_against_requirements
+            score_start = time.time()
+            score_result = score_candidate_against_requirements.invoke({
+                "candidate_profile": state["candidate_profile"],
+                "requirements": extract_result,
+            })
+            if isinstance(score_result, str):
+                try: score_result = json.loads(score_result)
+                except: score_result = {}
+
+            from app.agent.failure_handlers import validate_or_retry_scoring
+            validated_score = validate_or_retry_scoring(score_result)
+            if validated_score:
+                score_result = validated_score
+            state["scoring_result"] = score_result
+            state["current_step"] = "scored"
+
+            score_latency = int((time.time() - score_start) * 1000)
+            trace["tool_calls"] = list(trace.get("tool_calls", [])) + [
+                ToolCallTrace(tool="score_candidate_against_requirements", status="success", latency_ms=score_latency).model_dump()
+            ]
+            state["agent_trace"] = trace
+
+            if progress_cb:
+                try: progress_cb({"current_step": "scored", "agent_trace": trace})
+                except: pass
+
+            logger.info("agent_direct_score_success", latency_ms=score_latency,
+                        score=score_result.get("overall_score"), confidence=score_result.get("confidence"))
+
+            # Check low confidence
+            if score_result.get("confidence") == "low":
+                state["should_gather_more_signal"] = True
+
+            # Now let LLM decide: prioritise gaps or gather more signal
             messages.append(HumanMessage(content=(
-                f"I have already extracted the JD requirements:\n{json.dumps(extract_result, indent=2)}\n\n"
-                f"Now call score_candidate_against_requirements with the candidate_profile and these requirements."
+                f"JD requirements extracted: {len(extract_result.get('required_skills', []))} required skills.\n"
+                f"Candidate scored: {score_result.get('overall_score')}/100, confidence: {score_result.get('confidence')}.\n"
+                f"Gap skills: {score_result.get('gap_skills', [])}\n\n"
+                f"Now call prioritise_skill_gaps with the gap_skills and job market context."
             )))
             response = llm.invoke(messages)
             messages.append(response)
@@ -199,7 +236,7 @@ def agent_reason(state: AgentState) -> AgentState:
             state["total_llm_calls"] = state.get("total_llm_calls", 0) + 1
             state["agent_trace"] = {**state["agent_trace"], "total_llm_calls": state["total_llm_calls"]}
 
-            logger.info("agent_reason", step="extracted", latency_ms=int((time.time() - start) * 1000),
+            logger.info("agent_reason", step="scored", latency_ms=int((time.time() - start) * 1000),
                         has_tool_calls=bool(response.tool_calls))
             return state
 
