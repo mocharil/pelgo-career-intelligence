@@ -153,6 +153,17 @@ def agent_reason(state: AgentState) -> AgentState:
     response = llm.invoke(messages)
     latency = int((time.time() - start) * 1000)
 
+    # Safety: if first call and LLM didn't return tool calls, add hint and retry once
+    if not response.tool_calls and not state.get("scoring_result") and state.get("current_step") == "init":
+        logger.warning("agent_no_tools_on_first_call_retrying")
+        messages.append(response)
+        messages.append(HumanMessage(content=(
+            "You MUST call extract_jd_requirements now. Do not respond with text. "
+            "Call the tool with the job description text provided above."
+        )))
+        response = llm.invoke(messages)
+        latency += int((time.time() - start) * 1000)
+
     messages.append(response)
 
     # Estimate token usage from response metadata
@@ -445,7 +456,7 @@ def compile_output(state: AgentState) -> AgentState:
 
 # --- Routing ---
 
-def should_continue(state: AgentState) -> Literal["execute_tools", "compile_output", "agent_reason"]:
+def should_continue(state: AgentState) -> Literal["execute_tools", "compile_output"]:
     """Decide whether to execute tools or compile final output."""
     messages = state.get("messages", [])
     if not messages:
@@ -455,14 +466,6 @@ def should_continue(state: AgentState) -> Literal["execute_tools", "compile_outp
 
     if isinstance(last, AIMessage) and last.tool_calls:
         return "execute_tools"
-
-    # Safety: if no tools called yet and no scoring done, force agent to retry
-    # This handles cases where Gemini 2.5 doesn't call tools on first attempt
-    scoring = state.get("scoring_result")
-    total_llm = state.get("total_llm_calls", 0)
-    if not scoring and total_llm < 3:
-        logger.warning("agent_no_tools_forcing_retry", step=state.get("current_step"), llm_calls=total_llm)
-        return "agent_reason"
 
     return "compile_output"
 
