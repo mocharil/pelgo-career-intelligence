@@ -41,7 +41,9 @@ MAX_TOOL_CALLS = 10
 MAX_LLM_CALLS = 8
 
 # System prompt for the agent
-SYSTEM_PROMPT = """You are Pelgo's Career Intelligence Agent. Your job is to analyze how well a candidate matches a job description and create an actionable learning plan.
+SYSTEM_PROMPT = """You are Pelgo's Career Intelligence Agent. Your ONLY job is to analyze how well a candidate matches a job description and create an actionable learning plan.
+
+IMPORTANT: You MUST use your tools to complete this task. Do NOT try to answer without calling tools first. Your FIRST action must ALWAYS be to call extract_jd_requirements.
 
 You have access to these tools:
 1. extract_jd_requirements — Parse a job description into structured requirements
@@ -49,12 +51,12 @@ You have access to these tools:
 3. prioritise_skill_gaps — Rank skill gaps by impact and market demand
 4. research_skill_resources — Find learning resources for specific skills
 
-WORKFLOW:
-1. First, extract requirements from the job description.
-2. Score the candidate against those requirements.
-3. If confidence is LOW, consider whether re-extracting with more detail would help.
-4. Prioritise the skill gaps (do NOT research all gaps blindly).
-5. Research resources ONLY for the top 3 priority gaps.
+MANDATORY WORKFLOW (you must follow this exact sequence):
+1. FIRST: Call extract_jd_requirements with the job description text. This is REQUIRED.
+2. THEN: Call score_candidate_against_requirements with the candidate profile and extracted requirements.
+3. If confidence is LOW, consider re-extracting with more detail.
+4. Call prioritise_skill_gaps with the gap skills (do NOT research all gaps blindly).
+5. Call research_skill_resources ONLY for the top 3 priority gaps.
 6. Compile the final match result.
 
 RULES:
@@ -443,7 +445,7 @@ def compile_output(state: AgentState) -> AgentState:
 
 # --- Routing ---
 
-def should_continue(state: AgentState) -> Literal["execute_tools", "compile_output"]:
+def should_continue(state: AgentState) -> Literal["execute_tools", "compile_output", "agent_reason"]:
     """Decide whether to execute tools or compile final output."""
     messages = state.get("messages", [])
     if not messages:
@@ -453,6 +455,14 @@ def should_continue(state: AgentState) -> Literal["execute_tools", "compile_outp
 
     if isinstance(last, AIMessage) and last.tool_calls:
         return "execute_tools"
+
+    # Safety: if no tools called yet and no scoring done, force agent to retry
+    # This handles cases where Gemini 2.5 doesn't call tools on first attempt
+    scoring = state.get("scoring_result")
+    total_llm = state.get("total_llm_calls", 0)
+    if not scoring and total_llm < 3:
+        logger.warning("agent_no_tools_forcing_retry", step=state.get("current_step"), llm_calls=total_llm)
+        return "agent_reason"
 
     return "compile_output"
 
