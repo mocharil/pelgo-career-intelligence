@@ -149,20 +149,67 @@ def agent_reason(state: AgentState) -> AgentState:
             f"Follow the workflow: extract → score → prioritise → research top gaps → compile result."
         )))
 
+    # First step optimization: directly call extract_jd if no requirements yet
+    # This avoids Gemini 2.5 sometimes failing to call tools on first reasoning
+    if state.get("current_step") == "init" and not state.get("requirements"):
+        logger.info("agent_direct_extract_jd", step="init")
+        jd_input = state.get("job_url") or state.get("job_description_text", "")
+        start = time.time()
+        try:
+            from app.tools.extract_jd import extract_jd_requirements
+            extract_result = extract_jd_requirements.invoke({"job_url_or_text": jd_input})
+            if isinstance(extract_result, str):
+                try:
+                    extract_result = json.loads(extract_result)
+                except (json.JSONDecodeError, TypeError):
+                    extract_result = {"raw": extract_result}
+
+            state = {**state}
+            state["requirements"] = extract_result
+            state["current_step"] = "extracted"
+            state["messages"] = messages
+
+            # Record trace
+            latency = int((time.time() - start) * 1000)
+            trace = state.get("agent_trace", {"tool_calls": [], "total_llm_calls": 0, "fallbacks_triggered": 0, "total_tokens_used": 0})
+            trace["tool_calls"] = list(trace.get("tool_calls", [])) + [
+                ToolCallTrace(tool="extract_jd_requirements", status="success", latency_ms=latency).model_dump()
+            ]
+            state["agent_trace"] = trace
+
+            # Notify progress
+            progress_cb = state.get("progress_callback")
+            if progress_cb:
+                try:
+                    progress_cb({"current_step": "extracted", "agent_trace": trace})
+                except Exception:
+                    pass
+
+            logger.info("agent_direct_extract_success", latency_ms=latency, num_skills=len(extract_result.get("required_skills", [])))
+
+            # Now add context for LLM to continue from step 2
+            messages.append(HumanMessage(content=(
+                f"I have already extracted the JD requirements:\n{json.dumps(extract_result, indent=2)}\n\n"
+                f"Now call score_candidate_against_requirements with the candidate_profile and these requirements."
+            )))
+            response = llm.invoke(messages)
+            messages.append(response)
+
+            state["messages"] = messages
+            state["total_llm_calls"] = state.get("total_llm_calls", 0) + 1
+            state["agent_trace"] = {**state["agent_trace"], "total_llm_calls": state["total_llm_calls"]}
+
+            logger.info("agent_reason", step="extracted", latency_ms=int((time.time() - start) * 1000),
+                        has_tool_calls=bool(response.tool_calls))
+            return state
+
+        except Exception as e:
+            logger.error("agent_direct_extract_failed", error=str(e))
+            # Fall through to normal LLM reasoning
+
     start = time.time()
     response = llm.invoke(messages)
     latency = int((time.time() - start) * 1000)
-
-    # Safety: if first call and LLM didn't return tool calls, add hint and retry once
-    if not response.tool_calls and not state.get("scoring_result") and state.get("current_step") == "init":
-        logger.warning("agent_no_tools_on_first_call_retrying")
-        messages.append(response)
-        messages.append(HumanMessage(content=(
-            "You MUST call extract_jd_requirements now. Do not respond with text. "
-            "Call the tool with the job description text provided above."
-        )))
-        response = llm.invoke(messages)
-        latency += int((time.time() - start) * 1000)
 
     messages.append(response)
 
