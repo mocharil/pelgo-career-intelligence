@@ -198,7 +198,22 @@ def execute_tools(state: AgentState) -> AgentState:
         tool_args = tc["args"]
         tool_id = tc["id"]
 
-        logger.info("executing_tool", tool=tool_name, args_keys=list(tool_args.keys()))
+        # Gemini 2.5 sometimes passes tool args as JSON strings instead of dicts
+        if isinstance(tool_args, str):
+            try:
+                tool_args = json.loads(tool_args)
+            except (json.JSONDecodeError, TypeError):
+                pass
+        # Also parse any string values that look like JSON dicts/lists
+        if isinstance(tool_args, dict):
+            for k, v in tool_args.items():
+                if isinstance(v, str) and v.strip().startswith(("{", "[")):
+                    try:
+                        tool_args[k] = json.loads(v)
+                    except (json.JSONDecodeError, TypeError):
+                        pass
+
+        logger.info("executing_tool", tool=tool_name, args_keys=list(tool_args.keys()) if isinstance(tool_args, dict) else "raw")
 
         start = time.time()
         status = "success"
