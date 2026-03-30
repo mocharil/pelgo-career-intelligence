@@ -76,17 +76,21 @@ Return ONLY valid JSON, no markdown fences."""
 
 
 async def _parse_resume(text: str) -> dict:
-    """Parse resume text into structured profile using Gemini."""
+    """Parse resume text into structured profile using Gemini. Retries on truncated output."""
     from app.llm import call_gemini
     from app.utils import strip_markdown_json
 
-    raw = call_gemini(RESUME_PARSE_PROMPT.format(resume_text=text), max_tokens=3000)
-    raw = strip_markdown_json(raw)
-    try:
-        return json.loads(raw)
-    except json.JSONDecodeError as e:
-        logger.error("resume_parse_json_error", error=str(e))
-        raise HTTPException(status_code=400, detail="Failed to parse resume into structured data. Please try again.")
+    # Try up to 2 times with increasing max_tokens (some models truncate)
+    for attempt, tokens in enumerate([8192, 16384]):
+        raw = call_gemini(RESUME_PARSE_PROMPT.format(resume_text=text), max_tokens=tokens)
+        raw = strip_markdown_json(raw)
+        try:
+            return json.loads(raw)
+        except json.JSONDecodeError as e:
+            logger.warning("resume_parse_json_retry", attempt=attempt + 1, error=str(e), raw_length=len(raw))
+            if attempt == 1:
+                logger.error("resume_parse_json_error", error=str(e))
+                raise HTTPException(status_code=400, detail="Failed to parse resume into structured data. Please try again.")
 
 
 # --- Dependency ---

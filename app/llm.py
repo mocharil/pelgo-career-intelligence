@@ -52,7 +52,7 @@ def get_last_token_count() -> int:
     return _last_token_count
 
 
-def call_gemini(prompt: str, max_tokens: int = 4096) -> str:
+def call_gemini(prompt: str, max_tokens: int = 8192) -> str:
     """Call Gemini and return the text response. Logs token usage."""
     global _last_token_count
     _last_token_count = 0
