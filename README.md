@@ -330,9 +330,23 @@ Indexes: `candidate_id`, `status`.
 ## Worker Architecture
 
 - **Out-of-process:** Workers run as separate Docker containers (`worker-1`, `worker-2`), not threads inside the API.
-- **Race-safe:** Uses `SELECT ... FOR UPDATE SKIP LOCKED` in PostgreSQL for atomic job claiming. Two workers polling simultaneously will never claim the same job.
+- **Race-safe:** Uses `SELECT ... FOR UPDATE SKIP LOCKED` in PostgreSQL for atomic job claiming. Multiple workers polling simultaneously will never claim the same job.
 - **Failure isolation:** Each job runs in a try/except. A failed agent run stores the error and partial trace but does not crash the worker.
 - **Dead letter:** After 3 failures (`retry_count >= 3`), the job moves to `status: failed` with `error_detail` preserved. Can be manually re-queued via `POST /api/v1/matches/{id}/requeue`.
+
+### Scaling Workers
+
+The default setup runs 2 workers. To scale horizontally:
+
+```bash
+# Scale to 10 workers (5 per service)
+docker-compose up --build --scale worker-1=5 --scale worker-2=5
+
+# Or scale to any number
+docker-compose up --build --scale worker-1=N --scale worker-2=N
+```
+
+All workers share the same PostgreSQL job queue. `SELECT ... FOR UPDATE SKIP LOCKED` ensures no duplicate processing regardless of worker count. No configuration changes needed — just scale.
 
 ---
 
