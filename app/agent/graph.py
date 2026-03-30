@@ -222,22 +222,75 @@ def agent_reason(state: AgentState) -> AgentState:
             if score_result.get("confidence") == "low":
                 state["should_gather_more_signal"] = True
 
-            # Now let LLM decide: prioritise gaps or gather more signal
-            messages.append(HumanMessage(content=(
-                f"JD requirements extracted: {len(extract_result.get('required_skills', []))} required skills.\n"
-                f"Candidate scored: {score_result.get('overall_score')}/100, confidence: {score_result.get('confidence')}.\n"
-                f"Gap skills: {score_result.get('gap_skills', [])}\n\n"
-                f"Now call prioritise_skill_gaps with the gap_skills and job market context."
-            )))
+            # Step 3: prioritise gaps
+            gap_skills = score_result.get("gap_skills", [])
+            if gap_skills:
+                from app.tools.prioritise_gaps import prioritise_skill_gaps
+                prio_start = time.time()
+                domain = extract_result.get("domain", "technology")
+                prio_result = prioritise_skill_gaps.invoke({
+                    "gap_skills": gap_skills,
+                    "job_market_context": f"{domain} industry, {extract_result.get('seniority_level', 'mid')} level role",
+                })
+                if isinstance(prio_result, str):
+                    try: prio_result = json.loads(prio_result)
+                    except: prio_result = []
+
+                state["prioritised_gaps"] = prio_result
+                state["current_step"] = "prioritised"
+                prio_latency = int((time.time() - prio_start) * 1000)
+                trace["tool_calls"] = list(trace.get("tool_calls", [])) + [
+                    ToolCallTrace(tool="prioritise_skill_gaps", status="success", latency_ms=prio_latency).model_dump()
+                ]
+                state["agent_trace"] = trace
+                if progress_cb:
+                    try: progress_cb({"current_step": "prioritised", "agent_trace": trace})
+                    except: pass
+                logger.info("agent_direct_prioritise_success", latency_ms=prio_latency, num_gaps=len(prio_result))
+
+                # Step 4: research top 3 gaps
+                from app.tools.research_skills import research_skill_resources
+                top_gaps = prio_result[:3] if isinstance(prio_result, list) else []
+                seniority = state["candidate_profile"].get("seniority_level", "mid")
+
+                for gap_entry in top_gaps:
+                    skill_name = gap_entry.get("skill", "") if isinstance(gap_entry, dict) else str(gap_entry)
+                    if not skill_name:
+                        continue
+                    res_start = time.time()
+                    try:
+                        res_result = research_skill_resources.invoke({
+                            "skill_name": skill_name,
+                            "seniority_context": seniority,
+                        })
+                        if isinstance(res_result, str):
+                            try: res_result = json.loads(res_result)
+                            except: res_result = {}
+
+                        resources = state.get("skill_resources", {})
+                        resources[skill_name] = res_result
+                        state["skill_resources"] = resources
+                        state["current_step"] = "researched"
+                        res_latency = int((time.time() - res_start) * 1000)
+                        trace["tool_calls"] = list(trace.get("tool_calls", [])) + [
+                            ToolCallTrace(tool="research_skill_resources", status="success", latency_ms=res_latency).model_dump()
+                        ]
+                        state["agent_trace"] = trace
+                        if progress_cb:
+                            try: progress_cb({"current_step": "researched", "agent_trace": trace})
+                            except: pass
+                        logger.info("agent_direct_research_success", skill=skill_name, latency_ms=res_latency)
+                    except Exception as res_err:
+                        logger.warning("agent_direct_research_failed", skill=skill_name, error=str(res_err))
+
+            # Let LLM do final compile reasoning
+            messages.append(HumanMessage(content="All tools have been called. Compile the final result now."))
             response = llm.invoke(messages)
             messages.append(response)
 
             state["messages"] = messages
             state["total_llm_calls"] = state.get("total_llm_calls", 0) + 1
             state["agent_trace"] = {**state["agent_trace"], "total_llm_calls": state["total_llm_calls"]}
-
-            logger.info("agent_reason", step="scored", latency_ms=int((time.time() - start) * 1000),
-                        has_tool_calls=bool(response.tool_calls))
             return state
 
         except Exception as e:
