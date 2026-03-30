@@ -199,19 +199,27 @@ def execute_tools(state: AgentState) -> AgentState:
         tool_id = tc["id"]
 
         # Gemini 2.5 sometimes passes tool args as JSON strings instead of dicts
-        if isinstance(tool_args, str):
-            try:
-                tool_args = json.loads(tool_args)
-            except (json.JSONDecodeError, TypeError):
-                pass
-        # Also parse any string values that look like JSON dicts/lists
-        if isinstance(tool_args, dict):
-            for k, v in tool_args.items():
-                if isinstance(v, str) and v.strip().startswith(("{", "[")):
+        # Recursively parse all string values that are valid JSON
+        def parse_json_strings(obj: Any) -> Any:
+            if isinstance(obj, str):
+                stripped = obj.strip()
+                if stripped.startswith(("{", "[")):
                     try:
-                        tool_args[k] = json.loads(v)
+                        return parse_json_strings(json.loads(stripped))
                     except (json.JSONDecodeError, TypeError):
                         pass
+            elif isinstance(obj, dict):
+                return {k: parse_json_strings(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [parse_json_strings(item) for item in obj]
+            return obj
+
+        tool_args = parse_json_strings(tool_args)
+        if not isinstance(tool_args, dict):
+            try:
+                tool_args = json.loads(str(tool_args))
+            except (json.JSONDecodeError, TypeError):
+                tool_args = {"input": tool_args}
 
         logger.info("executing_tool", tool=tool_name, args_keys=list(tool_args.keys()) if isinstance(tool_args, dict) else "raw")
 
