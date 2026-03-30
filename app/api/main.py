@@ -131,6 +131,13 @@ async def create_candidate(
     # Parse resume
     parsed = await _parse_resume(text)
 
+    # Normalize: some models return description as list instead of string
+    for exp in parsed.get("experiences", []):
+        if isinstance(exp.get("description"), list):
+            exp["description"] = "\n".join(f"- {item}" if not item.startswith("-") else item for item in exp["description"])
+        if isinstance(exp.get("skills_used"), str):
+            exp["skills_used"] = [s.strip() for s in exp["skills_used"].split(",")]
+
     candidate_id = uuid.uuid4()
     candidate = CandidateTable(
         id=candidate_id,
