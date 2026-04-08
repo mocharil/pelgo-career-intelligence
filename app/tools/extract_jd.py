@@ -93,11 +93,12 @@ def extract_jd_requirements(job_url_or_text: str) -> dict[str, Any]:
         logger.info("extract_jd_cache_hit", cache_key=cache_key)
         return _extraction_cache[cache_key]
 
-    # Call Gemini, parse, validate
+    # Call LLM (light complexity — straightforward extraction task)
     result = call_llm_json(
         EXTRACT_PROMPT.format(jd_text=jd_text),
         JobRequirements,
         max_tokens=2000,
+        complexity="light",
     )
 
     # Cache it

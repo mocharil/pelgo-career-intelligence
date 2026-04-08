@@ -179,7 +179,7 @@ def research_skill_resources(
             seniority=seniority_context,
         )
 
-    result = call_llm_json(prompt, SkillResourceResult, max_tokens=2000)
+    result = call_llm_json(prompt, SkillResourceResult, max_tokens=2000, complexity="light")
 
     _resource_cache[cache_key] = result
 

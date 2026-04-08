@@ -25,15 +25,23 @@ def call_llm_json(
     prompt: str,
     response_schema: Type[BaseModel],
     max_tokens: int = 2000,
+    complexity: str = "standard",
 ) -> dict[str, Any]:
-    """Call Gemini, strip markdown, parse JSON, validate against Pydantic schema.
+    """Call LLM with fallback, strip markdown, parse JSON, validate against Pydantic schema.
+
+    Args:
+        prompt: The prompt text.
+        response_schema: Pydantic model to validate against.
+        max_tokens: Maximum output tokens.
+        complexity: Task complexity — "light", "standard", or "heavy".
 
     Returns the validated model as a dict.
     Raises ValueError if JSON parsing or validation fails.
     """
-    from app.llm import call_gemini
+    from app.llm import call_llm, TaskComplexity
 
-    raw = call_gemini(prompt, max_tokens=max_tokens)
+    complexity_enum = TaskComplexity(complexity)
+    raw = call_llm(prompt, max_tokens=max_tokens, complexity=complexity_enum)
     raw = strip_markdown_json(raw)
     parsed = json.loads(raw)
 

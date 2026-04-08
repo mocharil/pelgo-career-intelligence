@@ -39,6 +39,9 @@ pytest>=8.3.0,<9.0
 pytest-asyncio>=0.24.0,<1.0
 pytest-httpx>=0.30.0,<1.0
 
+# Fallback LLM provider (optional — only needed if OPENAI_API_KEY is set)
+openai>=1.40.0,<2.0
+
 # Utilities
 python-dotenv>=1.0.0,<2.0
 structlog>=24.4.0,<25.0

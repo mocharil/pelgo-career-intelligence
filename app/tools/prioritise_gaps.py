@@ -49,19 +49,21 @@ def prioritise_skill_gaps(
     Returns:
         Ranked list of prioritised skills with rationale.
     """
-    from app.llm import call_gemini
+    from app.llm import call_llm, TaskComplexity
 
     start = time.time()
 
     if not gap_skills:
         return []
 
-    raw_text = call_gemini(
+    # Light complexity — ranking is straightforward
+    raw_text = call_llm(
         PRIORITISE_PROMPT.format(
             gap_skills=json.dumps(gap_skills),
             job_market_context=job_market_context,
         ),
         max_tokens=1500,
+        complexity=TaskComplexity.LIGHT,
     )
 
     raw_text = strip_markdown_json(raw_text)

@@ -7,6 +7,11 @@ class Settings(BaseSettings):
     google_cloud_location: str = "us-central1"
     google_application_credentials: str = "/app/gemini_creds.json"
     gemini_model: str = "gemini-2.5-flash-lite"
+    gemini_model_heavy: str = "gemini-2.0-flash"
+
+    # Fallback LLM provider (optional — set OPENAI_API_KEY to enable)
+    openai_api_key: str = ""
+    openai_fallback_model: str = "gpt-4o-mini"
 
     # Database (defaults for docker-compose dev environment)
     database_url: str = "postgresql+asyncpg://pelgo:pelgo@postgres:5432/pelgo"

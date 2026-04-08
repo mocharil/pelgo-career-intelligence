@@ -77,6 +77,7 @@ def score_candidate_against_requirements(
     """
     start = time.time()
 
+    # Standard complexity — requires nuanced judgment on skill matching
     result = call_llm_json(
         SCORING_PROMPT.format(
             candidate_json=json.dumps(candidate_profile, indent=2),
@@ -84,7 +85,34 @@ def score_candidate_against_requirements(
         ),
         ScoringResult,
         max_tokens=2000,
+        complexity="standard",
     )
+
+    # --- Post-processing: enforce confidence heuristic in code ---
+    # LLM sometimes returns wrong confidence, so we override based on rules
+    required_skills = requirements.get("required_skills", [])
+    matched_skills = result.get("matched_skills", [])
+    num_required = len(required_skills)
+    num_matched = len(matched_skills)
+    match_ratio = num_matched / max(num_required, 1)
+
+    if num_required < 3 or match_ratio < 0.4:
+        enforced_confidence = "low"
+    elif match_ratio >= 0.7 and num_required >= 5:
+        enforced_confidence = "high"
+    else:
+        enforced_confidence = "medium"
+
+    if result.get("confidence") != enforced_confidence:
+        logger.info(
+            "confidence_overridden",
+            llm_said=result["confidence"],
+            enforced=enforced_confidence,
+            match_ratio=round(match_ratio, 2),
+            num_required=num_required,
+            num_matched=num_matched,
+        )
+        result["confidence"] = enforced_confidence
 
     latency = int((time.time() - start) * 1000)
     logger.info(
